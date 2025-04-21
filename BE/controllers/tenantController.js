@@ -1,0 +1,129 @@
+const Tenant = require("../models/tenantModel");
+const jwt = require('jsonwebtoken');
+const sendEmail = require("../configs/email")
+
+const addTenant = async (req, res) => {
+  try {
+    const { name, email, mobile, property } = req.body;
+    if (!name || !email || !mobile || !property) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    
+    const newTenant = await Tenant.create({ name, email, mobile, property });
+    const token = jwt.sign(
+        { tenantId: newTenant.id },
+        process.env.JWT_SECRET,
+      );
+      
+    const setupLink = `${process.env.CLIENT_URL}/tenant/set-password/${token}`;
+    const html = `
+    <h2>Welcome to RentEase, ${name}!</h2>
+    <p>We're excited to have you on board.</p>
+    <p>Please click the link below to set your password and complete your onboarding:</p>
+    <a href="${setupLink}" target="_blank">${setupLink}</a>
+    <br/>
+    <p>Best regards,</p>
+    <p>RentEase Team</p>
+  `;
+
+  await sendEmail(email, "Welcome to RentEase – Set Your Password", html);
+  console.log("Tenant added successfully:", newTenant);
+    res.status(201).json(newTenant);
+  } catch (error) {
+    console.error("Error adding tenant:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getTenants = async (req, res) => {
+  try {
+    const tenants = await Tenant.findAll();
+    res.status(200).json(tenants);
+  } catch (error) {
+    console.error("Error fetching tenants:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getTenantById = async (req, res) => {
+    try {
+      const tenant = await Tenant.findByPk(req.params.id);
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
+      res.status(200).json(tenant);
+    } catch (error) {
+      console.error("Error fetching tenant:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
+  
+  const updateTenant = async (req, res) => {
+    try {
+      const { name, email, mobile, property } = req.body;
+      const tenant = await Tenant.findByPk(req.params.id);
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
+  
+      tenant.name = name || tenant.name;
+      tenant.email = email || tenant.email;
+      tenant.mobile = mobile || tenant.mobile;
+      tenant.property = property || tenant.property;
+  
+      await tenant.save();
+      res.status(200).json(tenant);
+    } catch (error) {
+      console.error("Error updating tenant:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
+  
+  const deleteTenant = async (req, res) => {
+    try {
+      const tenant = await Tenant.findByPk(req.params.id);
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
+  
+      await tenant.destroy();
+      res.status(200).json({ message: "Tenant deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting tenant:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
+
+  const verifyTokenAndSetPassword = async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+  
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+  
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const tenantId = decoded.tenantId;
+  
+      // ⚠️ Save password as plain text (not recommended for production)
+      await Tenant.update(
+        { password: password },
+        { where: { id: tenantId } }
+      );
+  
+      res.status(200).json({ message: 'Password set successfully' });
+    } catch (error) {
+      console.error('Token error:', error);
+      res.status(400).json({ message: 'Invalid or expired token' });
+    }
+  };
+
+  module.exports = {
+    addTenant,
+    getTenants,
+    getTenantById,
+    updateTenant,
+    deleteTenant,
+    verifyTokenAndSetPassword,
+  };
