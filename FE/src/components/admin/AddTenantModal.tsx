@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 
-interface Property {
+export interface Property {
   id: string;
   name: string;
   rent: number;
@@ -45,6 +45,7 @@ export default function AddTenantModal({
   const propertyOptions = properties.map((prop) => ({
     value: prop.id,
     label: `${prop.name} - ₹${prop.rent} (${prop.frequency})`,
+    name:`${prop.name}`
   }));
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,23 +91,27 @@ export default function AddTenantModal({
             required
           />
           <Select
-            options={propertyOptions}
-            defaultValue={
-              formData.property
-                ? { label: formData.property, value: formData.property }
-                : null
-            }
-            onChange={(selected) =>
-              setFormData({ ...formData, property: selected?.label || "" })
-            }
-            placeholder="Select Property"
-            isSearchable
-          />
+          options={propertyOptions}
+          value={
+            formData.property
+              ? propertyOptions.find((opt) => opt.name === formData.property)
+              : null
+          }
+          onChange={(selected) =>
+            setFormData({ ...formData, property: selected?.value || "" })
+          }
+          placeholder="Select Property"
+          isSearchable
+        />
+
 
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={()=>{
+                onClose();
+                setFormData({ name: "", email: "", mobile: "", property: "" });
+              }}
               className="px-4 py-2 border rounded hover:bg-gray-100"
             >
               Cancel

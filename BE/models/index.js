@@ -7,3 +7,9 @@ Tenant.belongsTo(Property, { foreignKey: 'propertyId' });
 
 Tenant.hasMany(RentSchedule, { foreignKey: 'tenantId' });
 RentSchedule.belongsTo(Tenant, { foreignKey: 'tenantId' });
+
+module.exports = {
+    Tenant,
+    Property,
+    RentSchedule
+  };

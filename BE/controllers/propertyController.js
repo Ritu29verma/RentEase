@@ -1,4 +1,4 @@
-const Property = require("../models/property");
+const {Property} = require("../models/index");
 
 const getAllProperties = async (req, res) => {
   try {

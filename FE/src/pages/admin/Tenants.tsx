@@ -1,45 +1,52 @@
 // File: src/pages/admin/Tenants.tsx
 import React, { useState,useEffect } from "react";
-import AddTenantModal, { TenantFormData } from "../../components/admin/AddTenantModal";
+import AddTenantModal, { TenantFormData, Property } from "../../components/admin/AddTenantModal";
 import TenantTable from "../../components/admin/TenantTable";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const propertyList = [
-  { id: "1", name: "Green Residency - 101", rent: 12000, frequency: "Monthly" },
-  { id: "2", name: "Blue Heights - Villa 12", rent: 15000, frequency: "Monthly" },
-  { id: "3", name: "Sunrise Apartments - 3B", rent: 9500, frequency: "Weekly" },
-];
+
 
 export default function Tenants() {
   const [modalOpen, setModalOpen] = useState(false);
   const [tenantList, setTenantList] = useState<TenantFormData[]>([]);
+  const [propertyList, setPropertyList] = useState<Property[]>([]);
 
   const [search, setSearch] = useState("");
   const [editingTenantIndex, setEditingTenantIndex] = useState<number | null>(null);
   const navigate = useNavigate();
+  const fetchTenants = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/tenants`);
+      const formatted = res.data.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        email: t.email,
+        mobile: t.mobile,
+        property: t.Property?.name || "N/A",
+      }));
+      setTenantList(formatted);
+    } catch (error) {
+      toast.error("Failed to load tenants");
+    }
+  };
+  useEffect(() => {
+    fetchTenants();
 
-  // useEffect(() => {
-  //   const fetchTenants = async () => {
-  //     try {
-  //       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/tenants`); // or your actual backend route
-  //       const formatted = res.data.map((t: any) => ({
-  //         id: t.id,
-  //         name: t.name,
-  //         email: t.email,
-  //         mobile: t.mobile,
-  //         property: t.Property?.name || "N/A",
-  //       }));
-  //       setTenantList(formatted);
-  //     } catch (error) {
-  //       toast.error("Failed to load tenants");
-  //     }
-  //   };
+    const fetchProperties = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/property`);
+        setPropertyList(res.data);
+      } catch (error) {
+        toast.error("Failed to load properties");
+      }
+    };
   
-  //   fetchTenants();
-  // }, []);
+    fetchProperties();
+  }, []);
+
   const handleAddOrUpdateTenant = async (tenant: TenantFormData) => {
     try {
       const payload = {
@@ -49,14 +56,28 @@ export default function Tenants() {
         propertyId: tenant.property,
       };
   
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/tenants`, payload);
-      toast.success("Tenant added successfully!");
+      if (editingTenantIndex !== null && tenantList[editingTenantIndex].id) {
+        // Update existing tenant
+        await axios.put(
+          `${import.meta.env.VITE_API_BASE_URL}/api/tenants/${tenantList[editingTenantIndex].id}`,
+          payload
+        );
+        toast.success("Tenant updated successfully!");
+      } else {
+        // Add new tenant
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/tenants`, payload);
+        toast.success("Tenant added successfully!");
+      }
+  
       setModalOpen(false);
       setEditingTenantIndex(null);
+      fetchTenants();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to add tenant");
+      toast.error(error.response?.data?.message || "Failed to save tenant");
     }
   };
+  
+  
   
 
   const handleEditTenant = (tenant: TenantFormData, index: number) => {
@@ -64,15 +85,22 @@ export default function Tenants() {
     setModalOpen(true);
   };
 
-  const handleDeleteTenant = (index: number) => {
-    const confirm = window.confirm("Are you sure you want to delete this tenant?");
-    if (confirm) {
-      const updated = [...tenantList];
-      updated.splice(index, 1);
-      setTenantList(updated);
+  const handleDeleteTenant = async (index: number) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this tenant?");
+    if (!confirmDelete) return;
+  
+    try {
+      const tenantId = tenantList[index].id;
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/tenants/${tenantId}`);
       toast.success("Tenant deleted successfully!");
+  
+      // Refresh list
+      fetchTenants();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete tenant");
     }
-  };
+  };  
+  
 
   const handleViewProfile = (tenant: TenantFormData) => {
     navigate(`/admin/tenant-profile/${encodeURIComponent(tenant.id!)}`);

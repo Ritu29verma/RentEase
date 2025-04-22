@@ -1,7 +1,7 @@
-const Tenant = require("../models/tenantModel");
+const {Tenant} = require("../models/index");
 const jwt = require('jsonwebtoken');
 const sendEmail = require("../configs/email");
-const Property = require("../models/property");
+const {Property} = require("../models/index");
 
 const addTenant = async (req, res) => {
   try {
@@ -63,26 +63,32 @@ const getTenantById = async (req, res) => {
     }
   };
   
+  
   const updateTenant = async (req, res) => {
-    try {
-      const { name, email, mobile, property } = req.body;
-      const tenant = await Tenant.findByPk(req.params.id);
-      if (!tenant) {
-        return res.status(404).json({ message: "Tenant not found" });
+      const { id } = req.params;
+      const { name, email, mobile, propertyId } = req.body;
+
+      try {
+        const tenant = await Tenant.findByPk(id);
+
+        if (!tenant) {
+          return res.status(404).json({ message: "Tenant not found" });
+        }
+
+        await tenant.update({
+          name,
+          email,
+          mobile,
+          propertyId
+        });
+
+        res.json({ message: "Tenant updated successfully", tenant });
+      } catch (error) {
+        console.error("Error updating tenant:", error);
+        res.status(500).json({ message: "Server error" });
       }
-  
-      tenant.name = name || tenant.name;
-      tenant.email = email || tenant.email;
-      tenant.mobile = mobile || tenant.mobile;
-      tenant.property = property || tenant.property;
-  
-      await tenant.save();
-      res.status(200).json(tenant);
-    } catch (error) {
-      console.error("Error updating tenant:", error);
-      res.status(500).json({ message: "Server error" });
-    }
   };
+
   
   const deleteTenant = async (req, res) => {
     try {
