@@ -1,6 +1,7 @@
 const Tenant = require("../models/tenantModel");
 const jwt = require('jsonwebtoken');
-const sendEmail = require("../configs/email")
+const sendEmail = require("../configs/email");
+const Property = require("../models/property");
 
 const addTenant = async (req, res) => {
   try {
@@ -123,6 +124,31 @@ const getTenantById = async (req, res) => {
     }
   };
 
+  const login = async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      console.log("Login payload:", email, password);
+  
+      const user = await Tenant.findOne({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ detail: "Invalid credentials" });
+      }
+  
+      if (user.password !== password) {
+        return res.status(401).json({ detail: "Invalid credentials" });
+      }
+  
+      const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
+        expiresIn: "1h",
+      });
+  
+      res.json({ access_token: token, role: user.role });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  };
+
   module.exports = {
     addTenant,
     getTenants,
@@ -130,4 +156,5 @@ const getTenantById = async (req, res) => {
     updateTenant,
     deleteTenant,
     verifyTokenAndSetPassword,
+    login,
   };

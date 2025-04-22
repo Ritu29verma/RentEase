@@ -21,25 +21,25 @@ export default function Tenants() {
   const [editingTenantIndex, setEditingTenantIndex] = useState<number | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchTenants = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tenants`); // or your actual backend route
-        const formatted = res.data.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          email: t.email,
-          mobile: t.mobile,
-          property: t.Property?.name || "N/A",
-        }));
-        setTenantList(formatted);
-      } catch (error) {
-        toast.error("Failed to load tenants");
-      }
-    };
+  // useEffect(() => {
+  //   const fetchTenants = async () => {
+  //     try {
+  //       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/tenants`); // or your actual backend route
+  //       const formatted = res.data.map((t: any) => ({
+  //         id: t.id,
+  //         name: t.name,
+  //         email: t.email,
+  //         mobile: t.mobile,
+  //         property: t.Property?.name || "N/A",
+  //       }));
+  //       setTenantList(formatted);
+  //     } catch (error) {
+  //       toast.error("Failed to load tenants");
+  //     }
+  //   };
   
-    fetchTenants();
-  }, []);
+  //   fetchTenants();
+  // }, []);
   const handleAddOrUpdateTenant = async (tenant: TenantFormData) => {
     try {
       const payload = {
@@ -49,7 +49,7 @@ export default function Tenants() {
         propertyId: tenant.property,
       };
   
-      await axios.post(`${import.meta.env.VITE_BASE_URL}/api/tenants`, payload);
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/tenants`, payload);
       toast.success("Tenant added successfully!");
       setModalOpen(false);
       setEditingTenantIndex(null);

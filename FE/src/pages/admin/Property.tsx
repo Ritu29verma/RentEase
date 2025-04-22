@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import axios from 'axios';
+
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Type definitions
 interface Occupancy {
@@ -12,66 +20,13 @@ interface Occupancy {
 interface Property {
   id: string;
   name: string;
-  rent: string;
+  rent: number;
   frequency: string;
   occupancies: Occupancy[];
 }
 
 export default function Properties() {
-  const [properties, setProperties] = useState<Property[]>([
-    {
-      id: "p1",
-      name: "Flat 101 - Green Residency",
-      rent: "₹12,000",
-      frequency: "Monthly",
-      occupancies: [
-        { tenant: "John Doe", from: "2024-01-01", to: null, rent: "₹12,000" },
-        { tenant: "Jane Smith", from: "2023-01-01", to: "2023-12-31", rent: "₹11,500" },
-      ],
-    },
-    {
-      id: "p2",
-      name: "Room 3B - Sunrise Apartments",
-      rent: "₹9,000",
-      frequency: "Monthly",
-      occupancies: [
-        { tenant: "Rahul Kulkarni", from: "2022-01-01", to: "2023-12-01", rent: "₹9,000" },
-      ],
-    },
-    {
-      id: "p3",
-      name: "Penthouse A1 - Skyview Heights",
-      rent: "₹25,000",
-      frequency: "Monthly",
-      occupancies: [
-        { tenant: "Siddharth Mehra", from: "2024-03-01", to: null, rent: "₹25,000" },
-      ],
-    },
-    {
-      id: "p4",
-      name: "Studio 12 - Urban Nest",
-      rent: "₹7,500",
-      frequency: "Monthly",
-      occupancies: [],
-    },
-    {
-      id: "p5",
-      name: "Flat 202 - Ocean Breeze Residency",
-      rent: "₹15,500",
-      frequency: "Monthly",
-      occupancies: [
-        { tenant: "Sneha Patil", from: "2023-01-01", to: "2024-01-01", rent: "₹15,000" },
-      ],
-    },
-    {
-      id: "p6",
-      name: "Duplex Villa - Maple Grove",
-      rent: "₹30,000",
-      frequency: "Quarterly",
-      occupancies: [],
-    },
-  ]);
-
+  const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [yearFilter, setYearFilter] = useState("All");
@@ -95,25 +50,6 @@ export default function Properties() {
   const totalPages =
     resultsPerPage === "All" ? 1 : Math.ceil(filteredProperties.length / resultsPerPage);
 
-  const handleAddProperty = (e: React.FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const name = (form.elements.namedItem("name") as HTMLInputElement).value;
-    const rent = (form.elements.namedItem("rent") as HTMLInputElement).value;
-    const frequency = (form.elements.namedItem("frequency") as HTMLSelectElement).value;
-
-    const newProperty: Property = {
-      id: `p${properties.length + 1}`,
-      name,
-      rent,
-      frequency,
-      occupancies: [],
-    };
-
-    setProperties([...properties, newProperty]);
-    setShowAddModal(false);
-  };
-
   const filterOccupancies = (occupancies: Occupancy[]) =>
     occupancies.filter((o) => {
       const date = new Date(o.from);
@@ -134,6 +70,74 @@ export default function Properties() {
     });
     doc.save("occupancy-history.pdf");
   };
+
+  const fetchProperties = async () => {
+    try {
+      const res = await API.get("/api/property");
+      setProperties(res.data); // ⬅️ update state with fetched data
+    } catch (err) {
+      console.error("Error fetching properties", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const addProperty = async (property: Omit<Property, 'id'>) => {
+    const res = await API.post('/api/property', property);
+    return res.data;
+  };
+
+  const updateProperty = async (id: string, property: Omit<Property, 'id'>) => {
+    const res = await API.put(`/api/property/${id}`, property);
+    return res.data;
+  };
+
+  const deleteProperty = async (id: string) => {
+    await API.delete(`/api/property/${id}`);
+  };
+
+  // HANDLER 
+
+  const handleEditClick = (property: Property) => {
+    setSelectedProperty(property);
+    setShowAddModal(true);
+  };  
+
+// When Delete button is clicked
+const handleDelete = async (id: string) => {
+  if (confirm("Are you sure you want to delete this property?")) {
+    await deleteProperty(id);
+    setProperties((prev) => prev.filter((p) => p.id !== id));
+  }
+};
+
+const handleSaveProperty = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const form = e.target as HTMLFormElement;
+  const name = (form.elements.namedItem("name") as HTMLInputElement).value;
+  const rent = parseFloat((form.elements.namedItem("rent") as HTMLInputElement).value);
+  const frequency = (form.elements.namedItem("frequency") as HTMLSelectElement).value;
+
+  if (selectedProperty) {
+    const updated = await updateProperty(selectedProperty.id, {
+      name,
+      rent,
+      frequency,
+      occupancies: selectedProperty.occupancies,
+    });
+    setProperties((prev) =>
+      prev.map((p) => (p.id === selectedProperty.id ? updated : p))
+    );
+  } else {
+    const newProperty = await addProperty({ name, rent, frequency, occupancies: [] });
+    setProperties((prev) => [...prev, newProperty]);
+  }
+
+  setShowAddModal(false);
+  setSelectedProperty(null);
+};
 
   return (
     <div className="p-6 space-y-6">
@@ -200,8 +204,18 @@ export default function Properties() {
               <td className="px-3 py-2">{property.rent}</td>
               <td className="px-3 py-2">{property.frequency}</td>
               <td className="px-3 py-2">
-                <button className="text-blue-600 mr-2 text-sm">Edit</button>
-                <button className="text-red-600 text-sm">Delete</button>
+              <button
+                    className="text-blue-600 mr-2 text-sm"
+                    onClick={() => handleEditClick(property)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="text-red-600 text-sm"
+                    onClick={() => handleDelete(property.id)}
+                  >
+                    Delete
+                  </button>
               </td>
             </tr>
           ))}
@@ -239,55 +253,63 @@ export default function Properties() {
 
       {/* Add Property Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Add Property</h2>
-            <form onSubmit={handleAddProperty} className="space-y-4">
-              <input
-                name="name"
-                type="text"
-                required
-                placeholder="Property Name"
-                className="w-full border rounded px-3 py-2"
-              />
-              <input
-                name="rent"
-                type="text"
-                required
-                placeholder="Rent Amount"
-                className="w-full border rounded px-3 py-2"
-              />
-              <select
-                name="frequency"
-                required
-                className="w-full border rounded px-3 py-2"
-              >
-                <option value="">Select Frequency</option>
-                <option value="Monthly">Monthly</option>
-                <option value="Quarterly">Quarterly</option>
-              </select>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="border px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
+  <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded shadow w-full max-w-md">
+      <h2 className="text-xl font-semibold mb-4">
+        {selectedProperty ? "Edit Property" : "Add Property"}
+      </h2>
+      <form onSubmit={handleSaveProperty} className="space-y-4">
+        <input
+          name="name"
+          type="text"
+          required
+          placeholder="Property Name"
+          defaultValue={selectedProperty?.name || ""}
+          className="w-full border rounded px-3 py-2"
+        />
+        <input
+          name="rent"
+          type="text"
+          required
+          placeholder="Rent Amount"
+          defaultValue={selectedProperty?.rent || ""}
+          className="w-full border rounded px-3 py-2"
+        />
+        <select
+          name="frequency"
+          required
+          defaultValue={selectedProperty?.frequency || ""}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Select Frequency</option>
+          <option value="Monthly">Monthly</option>
+          <option value="Quarterly">Quarterly</option>
+        </select>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowAddModal(false);
+              setSelectedProperty(null);
+            }}
+            className="border px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+          >
+            Save
+          </button>
         </div>
-      )}
+      </form>
+    </div>
+  </div>
+)}
 
       {/* Occupancy Modal */}
-      {selectedProperty && (
+      {/* {selectedProperty && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-lg w-full max-w-3xl relative space-y-4">
             <h2 className="text-xl font-semibold">
@@ -376,19 +398,19 @@ export default function Properties() {
                   {filterOccupancies(selectedProperty.occupancies)
                     .filter((o) => o.to !== null)
                     .map((o, i) => (
-                      <tr key={i} className="border-b">
-                        <td className="px-3 py-1">{o.tenant}</td>
-                        <td className="px-3 py-1">{o.from}</td>
-                        <td className="px-3 py-1">{o.to}</td>
-                        <td className="px-3 py-1">{o.rent}</td>
-                      </tr>
-                    ))}
+                                             <tr key={i} className="border-b">
+                          <td className="px-3 py-2">{o.tenant}</td>
+                          <td className="px-3 py-2">{o.from}</td>
+                          <td className="px-3 py-2">{o.to || "Present"}</td>
+                          <td className="px-3 py-2">{o.rent}</td>
+                        </tr>
+                      ))}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
