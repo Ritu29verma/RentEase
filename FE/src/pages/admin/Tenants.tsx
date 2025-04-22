@@ -1,10 +1,11 @@
 // File: src/pages/admin/Tenants.tsx
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import AddTenantModal, { TenantFormData } from "../../components/admin/AddTenantModal";
 import TenantTable from "../../components/admin/TenantTable";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const propertyList = [
   { id: "1", name: "Green Residency - 101", rent: 12000, frequency: "Monthly" },
@@ -14,46 +15,49 @@ const propertyList = [
 
 export default function Tenants() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [tenantList, setTenantList] = useState<TenantFormData[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      mobile: "9876543210",
-      property: "Flat 101 - Green Residency",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      mobile: "8765432109",
-      property: "Villa 12 - Blue Heights",
-    },
-    {
-      id: 3,
-      name: "Amit Shah",
-      email: "amit@example.com",
-      mobile: "7654321098",
-      property: "Room 3B - Sunrise Apartments",
-    },
-  ]);
+  const [tenantList, setTenantList] = useState<TenantFormData[]>([]);
 
   const [search, setSearch] = useState("");
   const [editingTenantIndex, setEditingTenantIndex] = useState<number | null>(null);
   const navigate = useNavigate();
 
-  const handleAddOrUpdateTenant = (tenant: TenantFormData) => {
-    if (editingTenantIndex !== null) {
-      const updated = [...tenantList];
-      updated[editingTenantIndex] = tenant;
-      setTenantList(updated);
-      toast.success("Tenant updated successfully!");
-    } else {
-      setTenantList([tenant, ...tenantList]);
+  useEffect(() => {
+    const fetchTenants = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tenants`); // or your actual backend route
+        const formatted = res.data.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          email: t.email,
+          mobile: t.mobile,
+          property: t.Property?.name || "N/A",
+        }));
+        setTenantList(formatted);
+      } catch (error) {
+        toast.error("Failed to load tenants");
+      }
+    };
+  
+    fetchTenants();
+  }, []);
+  const handleAddOrUpdateTenant = async (tenant: TenantFormData) => {
+    try {
+      const payload = {
+        name: tenant.name,
+        email: tenant.email,
+        mobile: tenant.mobile,
+        propertyId: tenant.property,
+      };
+  
+      await axios.post(`${import.meta.env.VITE_BASE_URL}/api/tenants`, payload);
       toast.success("Tenant added successfully!");
+      setModalOpen(false);
+      setEditingTenantIndex(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to add tenant");
     }
-    setEditingTenantIndex(null);
   };
+  
 
   const handleEditTenant = (tenant: TenantFormData, index: number) => {
     setEditingTenantIndex(index);

@@ -4,30 +4,31 @@ const sendEmail = require("../configs/email")
 
 const addTenant = async (req, res) => {
   try {
-    const { name, email, mobile, property } = req.body;
-    if (!name || !email || !mobile || !property) {
+    const { name, email, mobile, propertyId } = req.body;
+    if (!name || !email || !mobile || !propertyId) {
       return res.status(400).json({ message: "All fields are required" });
     }
-    
-    const newTenant = await Tenant.create({ name, email, mobile, property });
-    const token = jwt.sign(
-        { tenantId: newTenant.id },
-        process.env.JWT_SECRET,
-      );
-      
+
+    const existingTenant = await Tenant.findOne({ where: { email } });
+    if (existingTenant) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const newTenant = await Tenant.create({ name, email, mobile, propertyId });
+    const token = jwt.sign({ tenantId: newTenant.id }, process.env.JWT_SECRET);
+
     const setupLink = `${process.env.CLIENT_URL}/tenant/set-password/${token}`;
     const html = `
-    <h2>Welcome to RentEase, ${name}!</h2>
-    <p>We're excited to have you on board.</p>
-    <p>Please click the link below to set your password and complete your onboarding:</p>
-    <a href="${setupLink}" target="_blank">${setupLink}</a>
-    <br/>
-    <p>Best regards,</p>
-    <p>RentEase Team</p>
-  `;
+      <h2>Welcome to RentEase, ${name}!</h2>
+      <p>We're excited to have you on board.</p>
+      <p>Please click the link below to set your password and complete your onboarding:</p>
+      <a href="${setupLink}" target="_blank">${setupLink}</a>
+      <br/>
+      <p>Best regards,</p>
+      <p>RentEase Team</p>
+    `;
 
-  await sendEmail(email, "Welcome to RentEase – Set Your Password", html);
-  console.log("Tenant added successfully:", newTenant);
+    await sendEmail(email, "Welcome to RentEase – Set Your Password", html);
     res.status(201).json(newTenant);
   } catch (error) {
     console.error("Error adding tenant:", error);
@@ -35,9 +36,12 @@ const addTenant = async (req, res) => {
   }
 };
 
+
 const getTenants = async (req, res) => {
   try {
-    const tenants = await Tenant.findAll();
+    const tenants = await Tenant.findAll({
+      include: { model: Property, attributes: ['id', 'name', 'rent', 'frequency'] },
+    });
     res.status(200).json(tenants);
   } catch (error) {
     console.error("Error fetching tenants:", error);

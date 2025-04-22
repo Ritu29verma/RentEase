@@ -16,7 +16,7 @@ const sequelize = new Sequelize(
   }
 );
 
-sequelize.sync() // use { force: true } to reset table every time (dev only)
+sequelize.sync({ alter: true })
   .then(() => console.log("✅ Tables synced"))
   .catch((err) => console.error("❌ Error syncing tables:", err));
 
