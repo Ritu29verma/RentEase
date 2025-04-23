@@ -5,6 +5,8 @@ import {
   Navigate,
 } from "react-router-dom";
 
+import ProtectedRoute from "./components/ProtectedRoute";
+
 // Layouts
 import TenantLayout from "./pages/TenantLayout";
 import AdminLayout from "./pages/AdminLayout"; 
@@ -36,6 +38,7 @@ export default function App() {
         <Route path="/login" element={<UnifiedLogin />} />
 
         {/* ✅ Tenant Panel */}
+        <Route element={<ProtectedRoute allowedRole="tenant" />}>
         <Route path="/tenant" element={<TenantLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<TenantDashboard />} />
@@ -44,10 +47,12 @@ export default function App() {
           <Route path="my-property" element={<MyProperty />} />
           <Route path="profile" element={<TenantSelfProfile />} />
         </Route>
+        </Route>
 
         <Route path="/tenant/set-password/:token" element={<SetPassword />} />
 
         {/* ✅ Admin Panel */}
+        <Route element={<ProtectedRoute allowedRole="admin" />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
@@ -57,6 +62,7 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="tenant-profile/:name" element={<TenantProfile />} />
           <Route path="invoice/:id" element={<InvoiceDetails />} />
+        </Route>
         </Route>
       </Routes>
     </Router>
