@@ -1,4 +1,5 @@
 const {Tenant} = require("../models/index");
+const Admin = require("../models/Admin")
 const jwt = require('jsonwebtoken');
 const sendEmail = require("../configs/email");
 const {Property} = require("../models/index");
@@ -152,27 +153,28 @@ const getTenantById = async (req, res) => {
   const login = async (req, res) => {
     try {
       const { email, password } = req.body;
-      console.log("Login payload:", email, password);
-  
-      const user = await Tenant.findOne({ where: { email } });
-      if (!user) {
-        return res.status(401).json({ detail: "Invalid credentials" });
+      
+      const admin = await Admin.findOne({ where: { email } });
+      if (admin && admin.password === password) {
+        const token = jwt.sign({ userId: admin.id, role: 'admin' }, process.env.JWT_SECRET);
+        return res.json({ access_token: token, role: 'admin' });
       }
   
-      if (user.password !== password) {
-        return res.status(401).json({ detail: "Invalid credentials" });
+      const tenant = await Tenant.findOne({ where: { email } });
+      if (tenant && tenant.password === password) {
+        const token = jwt.sign({ userId: tenant.id, role: 'tenant' }, process.env.JWT_SECRET);
+        return res.json({ access_token: token, role: 'tenant' });
       }
   
-      const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
-      });
-  
-      res.json({ access_token: token, role: user.role });
+      res.status(401).json({ detail: "Invalid credentials" });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ detail: "Internal server error" });
     }
   };
 
+
+  
   module.exports = {
     addTenant,
     getTenants,
