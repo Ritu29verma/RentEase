@@ -16,18 +16,18 @@ const sequelize = new Sequelize(
   }
 );
 
-sequelize.sync({ alter: true })
-  .then(() => console.log("✅ Tables synced"))
-  .catch((err) => console.error("❌ Error syncing tables:", err));
-
-// Test connection
-(async () => {
+ const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ PostgreSQL connected');
-  } catch (error) {
-    console.error('❌ Sequelize connection error:', error);
-  }
-})();
+    console.log("✅ Postgres connected via Sequelize.");
 
-module.exports = sequelize;
+    // Sync models
+    await sequelize.sync({ alter: true });
+    console.log("✅ Models synced.");
+  } catch (error) {
+    console.error("❌ Unable to connect to the database:", error);
+    process.exit(1);
+  }
+};
+
+module.exports = { sequelize, connectDB };

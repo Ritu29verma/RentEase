@@ -1,6 +1,6 @@
 // models/RentSchedule.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../configs/db');
+const {sequelize} = require('../configs/db');
 
 const RentSchedule = sequelize.define('RentSchedule', {
   month: { type: DataTypes.STRING, allowNull: false },

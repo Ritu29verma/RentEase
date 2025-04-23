@@ -1,6 +1,6 @@
 // models/Property.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../configs/db');
+const {sequelize} = require('../configs/db');
 
 const Property = sequelize.define('Property', {
   name: {

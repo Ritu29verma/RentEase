@@ -2,6 +2,8 @@ const {Tenant} = require("../models/index");
 const jwt = require('jsonwebtoken');
 const sendEmail = require("../configs/email");
 const {Property} = require("../models/index");
+const moment = require('moment');
+const {RentSchedule} =require("../models/index")
 
 const addTenant = async (req, res) => {
   try {
@@ -16,6 +18,9 @@ const addTenant = async (req, res) => {
     }
 
     const newTenant = await Tenant.create({ name, email, mobile, propertyId });
+
+    res.status(201).json(newTenant);
+
     const token = jwt.sign({ tenantId: newTenant.id }, process.env.JWT_SECRET);
 
     const setupLink = `${process.env.CLIENT_URL}/tenant/set-password/${token}`;
@@ -29,14 +34,29 @@ const addTenant = async (req, res) => {
       <p>RentEase Team</p>
     `;
 
-    await sendEmail(email, "Welcome to RentEase – Set Your Password", html);
-    res.status(201).json(newTenant);
+    sendEmail(email, "Welcome to RentEase – Set Your Password", html)
+      .then(() => console.log(`✅ Email sent to ${email}`))
+      .catch((err) => console.error("❌ Error sending email:", err));
+
+    const property = await Property.findByPk(propertyId);
+    if (property) {
+      const dueDate = moment(newTenant.createdAt);
+      await RentSchedule.create({
+        tenantId: newTenant.id,
+        month: dueDate.format('MMMM YYYY'),
+        dueDate: dueDate.toDate(),
+        status: 'Pending',
+      });
+      console.log(`✅ Initial rent schedule created for ${name} (${dueDate.format('MMMM YYYY')})`);
+    }
+
   } catch (error) {
     console.error("Error adding tenant:", error);
-    res.status(500).json({ message: "Server error" });
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Server error" });
+    }
   }
 };
-
 
 const getTenants = async (req, res) => {
   try {
@@ -117,7 +137,6 @@ const getTenantById = async (req, res) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const tenantId = decoded.tenantId;
   
-      // ⚠️ Save password as plain text (not recommended for production)
       await Tenant.update(
         { password: password },
         { where: { id: tenantId } }
@@ -145,7 +164,6 @@ const getTenantById = async (req, res) => {
       }
   
       const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
-        expiresIn: "1h",
       });
   
       res.json({ access_token: token, role: user.role });
