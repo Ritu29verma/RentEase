@@ -35,6 +35,7 @@ const runRentScheduler = async () => {
         tenantId: tenant.id,
         month: nextDueDate.format('MMMM YYYY'),
         dueDate: nextDueDate.toDate(),
+        amount: property.rent, 
         status: 'Pending',
       });
 

@@ -46,6 +46,7 @@ const addTenant = async (req, res) => {
         tenantId: newTenant.id,
         month: dueDate.format('MMMM YYYY'),
         dueDate: dueDate.toDate(),
+        amount: property.rent, 
         status: 'Pending',
       });
       console.log(`✅ Initial rent schedule created for ${name} (${dueDate.format('MMMM YYYY')})`);

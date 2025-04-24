@@ -5,6 +5,7 @@ const {sequelize} = require('../configs/db');
 const RentSchedule = sequelize.define('RentSchedule', {
   month: { type: DataTypes.STRING, allowNull: false },
   dueDate: { type: DataTypes.DATEONLY, allowNull: false },
+  amount: { type: DataTypes.INTEGER, allowNull: false }, 
   status: {
     type: DataTypes.ENUM('Paid', 'Pending'),
     allowNull: false,

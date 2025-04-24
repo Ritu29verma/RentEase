@@ -1,6 +1,32 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function TenantDashboard() {
+  const [upcomingRent, setUpcomingRent] = useState<{ amount: number; dueDate: string } | null>(null);
+
+  useEffect(() => {
+    const fetchUpcomingRent = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/my-latest-rent-schedules`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.data.data) {
+          setUpcomingRent({
+            amount: res.data.data.amount,
+            dueDate: new Date(res.data.data.dueDate).toDateString(),
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching upcoming rent:", err);
+      }
+    };
+
+    fetchUpcomingRent();
+  }, []);
+
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Welcome back 👋</h1>
@@ -21,19 +47,22 @@ export default function TenantDashboard() {
         </div>
       </div>
 
-      {/* Upcoming Payment Reminder */}
-      <div className="bg-yellow-50 border border-yellow-300 rounded p-4 shadow space-y-2">
-        <p className="text-sm text-yellow-800 font-medium">Upcoming Rent Due</p>
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-lg font-semibold">₹12,000</p>
-            <p className="text-sm text-gray-600">Due on May 01, 2025</p>
+       {/* Upcoming Payment Reminder */}
+       {upcomingRent && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded p-4 shadow space-y-2">
+          <p className="text-sm text-yellow-800 font-medium">Upcoming Rent Due</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-lg font-semibold">₹{upcomingRent.amount}</p>
+              <p className="text-sm text-gray-600">Due on {upcomingRent.dueDate}</p>
+            </div>
+            <button className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">
+              Pay Now
+            </button>
           </div>
-          <button className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">
-            Pay Now
-          </button>
         </div>
-      </div>
+      )}
+
 
       {/* Recent Invoices */}
       <div className="bg-white border rounded p-4 shadow">

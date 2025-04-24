@@ -24,4 +24,32 @@ const getmyrentSchedules= async (req, res) => {
   }
 };
 
-module.exports={getAllRentSchedules,getmyrentSchedules}
+const getmyLatestrentSchedules = async (req, res) => {
+  try {
+    const lastSchedule = await RentSchedule.findOne({
+      where: {
+        tenantId: req.tenantId,
+        status: "Pending",
+      },
+      order: [["dueDate", "DESC"]],
+    });
+
+    if (!lastSchedule) {
+      return res.json({ message: "No upcoming rent found", data: null });
+    }
+
+    res.json({
+      data: {
+        id: lastSchedule.id,
+        amount: lastSchedule.amount,
+        dueDate: lastSchedule.dueDate,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ detail: "Server error" });
+  }
+};
+
+
+module.exports={getAllRentSchedules,getmyrentSchedules,getmyLatestrentSchedules}
