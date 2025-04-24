@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 
 export interface Property {
-  id: string;
+  id: number;
   name: string;
   rent: number;
   frequency: string;
@@ -15,6 +15,7 @@ export interface TenantFormData {
   email: string;
   mobile: string;
   property: string;
+  propertyid: number;
 }
 
 interface AddTenantModalProps {
@@ -33,7 +34,7 @@ export default function AddTenantModal({
   defaultData,
 }: AddTenantModalProps) {
   const [formData, setFormData] = useState<TenantFormData>(
-    defaultData || { name: "", email: "", mobile: "", property: "" }
+    defaultData || { name: "", email: "", mobile: "", property: "", propertyid:0 }
   );
 
   useEffect(() => {
@@ -45,7 +46,6 @@ export default function AddTenantModal({
   const propertyOptions = properties.map((prop) => ({
     value: prop.id,
     label: `${prop.name} - ₹${prop.rent} (${prop.frequency})`,
-    name:`${prop.name}`
   }));
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -53,7 +53,7 @@ export default function AddTenantModal({
     if (formData.name && formData.email && formData.mobile && formData.property) {
       onSubmit(formData);
       onClose();
-      setFormData({ name: "", email: "", mobile: "", property: "" });
+      setFormData({ name: "", email: "", mobile: "", property: "", propertyid: 0});
     }
   };
 
@@ -93,24 +93,32 @@ export default function AddTenantModal({
           <Select
           options={propertyOptions}
           value={
-            formData.property
-              ? propertyOptions.find((opt) => opt.name === formData.property)
+            formData.propertyid
+              ? propertyOptions.find((opt) => opt.value === formData.propertyid)
               : null
           }
-          onChange={(selected) =>
-            setFormData({ ...formData, property: selected?.value || "" })
-          }
+          onChange={(selected) => {
+            if (selected) {
+              const selectedProperty = properties.find((p) => p.id === selected.value);
+              setFormData({
+                ...formData,
+                propertyid: Number(selected.value),
+                property: selectedProperty?.name || "",
+              });
+            } else {
+              setFormData({ ...formData, propertyid: 0, property: "" });
+            }
+          }}
           placeholder="Select Property"
           isSearchable
         />
-
 
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={()=>{
                 onClose();
-                setFormData({ name: "", email: "", mobile: "", property: "" });
+                setFormData({ name: "", email: "", mobile: "", property: "", propertyid:0 });
               }}
               className="px-4 py-2 border rounded hover:bg-gray-100"
             >

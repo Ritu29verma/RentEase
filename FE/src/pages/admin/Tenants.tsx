@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 
-
 export default function Tenants() {
   const [modalOpen, setModalOpen] = useState(false);
   const [tenantList, setTenantList] = useState<TenantFormData[]>([]);
@@ -25,7 +24,8 @@ export default function Tenants() {
         name: t.name,
         email: t.email,
         mobile: t.mobile,
-        property: t.Property?.name || "N/A",
+        propertyid: t.Property?.id || 0,
+        property: t.Property?.name || "N/A"
       }));
       setTenantList(formatted);
     } catch (error) {
@@ -53,7 +53,7 @@ export default function Tenants() {
         name: tenant.name,
         email: tenant.email,
         mobile: tenant.mobile,
-        propertyId: tenant.property,
+        propertyId: tenant.propertyid,
       };
   
       if (editingTenantIndex !== null && tenantList[editingTenantIndex].id) {
@@ -76,8 +76,6 @@ export default function Tenants() {
       toast.error(error.response?.data?.message || "Failed to save tenant");
     }
   };
-  
-  
   
 
   const handleEditTenant = (tenant: TenantFormData, index: number) => {
@@ -145,13 +143,11 @@ export default function Tenants() {
       <div className="bg-white shadow rounded p-4">
         <h3 className="text-lg font-semibold mb-4">Tenant List</h3>
         <TenantTable
-          tenants={tenantList.filter(t =>
-            `${t.name} ${t.email} ${t.mobile}`.toLowerCase().includes(search.toLowerCase())
-          )}
-          onEdit={handleEditTenant}
-          onDelete={handleDeleteTenant}
-          onView={handleViewProfile}
-        />
+        tenants={tenantList}
+        onEdit={(tenant, index) => handleEditTenant(tenant as TenantFormData, index)}
+        onView={(tenant) => handleViewProfile(tenant as TenantFormData)}
+        onDelete={handleDeleteTenant}
+      />
       </div>
 
       <AddTenantModal
