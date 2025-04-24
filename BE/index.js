@@ -5,7 +5,8 @@ const { connectDB } = require('./configs/db');
 const runRentScheduler = require('./rentScheduler');
 const tenantRoutes = require("./routes/tenantRoutes");
 const propertyRouts = require("./routes/propertyRoutes");
-const adminroutes =require("./routes/adminroutes")
+const adminroutes =require("./routes/adminroutes");
+const rentScheduleRoutes = require("./routes/rentScheduleRoutes")
 const cron = require("node-cron");
 
 dotenv.config();
@@ -16,7 +17,7 @@ app.use(express.json());
 app.use('/api', tenantRoutes);
 app.use('/api', propertyRouts);
 app.use('/api', adminroutes);
-
+app.use('/api', rentScheduleRoutes);
 const PORT = process.env.PORT || 5000;
 
 (async () => {

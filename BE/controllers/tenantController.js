@@ -95,10 +95,33 @@ const getTenantById = async (req, res) => {
     }
   };
   
+  const updateTenantProfile = async (req, res) => {
+    const { name, email, mobile } = req.body;
+    const tenantId = req.params.id;
+  
+    try {
+      const tenant = await Tenant.findByPk(tenantId);
+      if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  
+      tenant.name = name || tenant.name;
+      tenant.email = email || tenant.email;
+      tenant.mobile = mobile || tenant.mobile;
+  
+      await tenant.save();
+  
+      res.json({ message: 'Profile updated successfully', tenant });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Failed to update profile' });
+    }
+  };
 
   module.exports = {
     getTenantById,
     verifyTokenAndSetPassword,
     login,
-    getMyProperty
+    getMyProperty,
+    updateTenantProfile,
   };
+
+
