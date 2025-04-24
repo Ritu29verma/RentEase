@@ -10,7 +10,7 @@ export default function UnifiedLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/tenants/login`, { email, password });
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/login`, { email, password });
       const { access_token, role } = res.data;
 
       localStorage.setItem("token", access_token);
