@@ -5,6 +5,9 @@ const sendEmail = require("../configs/email");
 const {Property} = require("../models/index");
 const moment = require('moment');
 const {RentSchedule} =require("../models/index")
+const {GeneralSetting} = require("../models/GeneralSetting")
+const {ReminderSetting} = require("../models/ReminderSetting")
+const {BillingSetting} = require("../models/BillingSetting")
 
 const addTenant = async (req, res) => {
   try {
@@ -115,13 +118,73 @@ const updateTenant = async (req, res) => {
       res.status(500).json({ message: "Server error" });
     }
   };
-
+  
+  const saveGeneralSettings = async (req, res) => {
+    try {
+      const [setting] = await GeneralSetting.upsert(req.body);
+      res.json(setting);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+  
+  const getGeneralSettings = async (req, res) => {
+    try {
+      const setting = await GeneralSetting.findOne();
+      res.json(setting);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+  
+  
+  const saveReminderSettings = async (req, res) => {
+    try {
+      const [setting] = await ReminderSetting.upsert(req.body);
+      res.json(setting);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+  
+  const getReminderSettings = async (req, res) => {
+    try {
+      const setting = await ReminderSetting.findOne();
+      res.json(setting);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+  
+  
+  const saveBillingSettings = async (req, res) => {
+    try {
+      const [setting] = await BillingSetting.upsert(req.body);
+      res.json(setting);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+  
+  const getBillingSettings = async (req, res) => {
+    try {
+      const setting = await BillingSetting.findOne();
+      res.json(setting);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
 
 
 module.exports = {
     addTenant,
     getTenants,
     updateTenant,
-    deleteTenant
-
+    deleteTenant,
+    getBillingSettings,
+    saveBillingSettings,
+    getReminderSettings,
+    saveReminderSettings,
+    getGeneralSettings,
+    saveGeneralSettings
 }

@@ -52,9 +52,21 @@ const deleteProperty = async (req, res) => {
   }
 };
 
+
+const getTotalProperties = async (req, res) => {
+  try {
+    const totalProperties = await Property.count();
+    res.status(200).json({ totalProperties });
+  } catch (err) {
+    console.error("Error fetching total properties:", err);
+    res.status(500).json({ message: "Error fetching total properties" });
+  }
+};
+
 module.exports = {
   getAllProperties,
   createProperty,
   updateProperty,
   deleteProperty,
+  getTotalProperties
 };

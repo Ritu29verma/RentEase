@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const sendEmail = require("../configs/email");
 const {Property} = require("../models/index");
 const moment = require('moment');
-const {RentSchedule} =require("../models/index")
+const {RentSchedule, Invoice} =require("../models/index")
 
 
 const getTenantById = async (req, res) => {
@@ -116,12 +116,85 @@ const getTenantById = async (req, res) => {
     }
   };
 
+
+  const dashboardStats = async (req, res) => {
+    try {
+      const tenantId = req.tenantId;
+  
+      // 1. Get Tenant with associated Property
+      const tenant = await Tenant.findByPk(tenantId, {
+        include: {
+          model: Property,
+          attributes: ['name', 'frequency']
+        }
+      });
+  
+      if (!tenant || !tenant.Property) {
+        return res.status(404).json({ message: 'Tenant or property not found' });
+      }
+  
+      const { name: propertyName, frequency } = tenant.Property;
+  
+      // 2. Get latest RentSchedule for tenant
+      const lastSchedule = await RentSchedule.findOne({
+        where: { tenantId },
+        order: [['dueDate', 'DESC']],
+      });
+  
+      let nextDueDate = null;
+  
+      if (lastSchedule) {
+        const lastDate = new Date(lastSchedule.dueDate);
+  
+        if (frequency === 'Monthly') {
+          lastDate.setMonth(lastDate.getMonth() + 1);
+        } else if (frequency === 'Quarterly') {
+          lastDate.setMonth(lastDate.getMonth() + 3);
+        }
+  
+        nextDueDate = lastDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      }
+  
+      // 3. Total Paid amount
+      const totalPaidData = await Invoice.findAll({
+        where: {
+          tenantId,
+          status: 'Paid',
+        },
+        attributes: ['amount'],
+      });
+  
+      const totalPaid = totalPaidData.reduce((sum, inv) => sum + inv.amount, 0);
+  
+      res.json({
+        currentProperty: propertyName,
+        nextDueDate,
+        totalPaid
+      });
+  
+    } catch (err) {
+      console.error("Error in tenant dashboard:", err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+  const getTotalTenants = async (req, res) => {
+    try {
+      const totalTenants = await Tenant.count();
+      res.json({ totalTenants });
+    } catch (err) {
+      console.error('Error fetching total tenants:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
+
   module.exports = {
     getTenantById,
     verifyTokenAndSetPassword,
     login,
     getMyProperty,
     updateTenantProfile,
+    dashboardStats,
+    getTotalTenants
   };
 
 

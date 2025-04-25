@@ -1,10 +1,22 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Papa from "papaparse";
+import axios from "axios";
+
+interface Payment {
+  invoice: string;
+  transactionId: string;
+  tenant: string;
+  property: string;
+  date: string;
+  amount: number;
+  status: 'paid' | 'pending' | 'failed';
+}
 
 export default function Payments() {
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [statusFilter, setStatusFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [monthFilter, setMonthFilter] = useState("All");
@@ -14,26 +26,32 @@ export default function Payments() {
   const [page, setPage] = useState(1);
   const itemsPerPage = 5;
 
-  const payments = [
-    {
-      invoice: "INV-001",
-      transactionId: "TXN123456",
-      tenant: "John Doe",
-      property: "Flat 101 - Green Residency",
-      date: "2024-04-05",
-      amount: "₹12000",
-      status: "Paid",
-    },
-    {
-      invoice: "INV-002",
-      transactionId: "TXN654321",
-      tenant: "Jane Smith",
-      property: "Sunrise Apartments - 3B",
-      date: "2024-05-01",
-      amount: "₹12000",
-      status: "Pending",
-    },
-  ];
+  useEffect(() => {
+    const fetchPayments = async () => {
+      console.log("📡 Fetching invoices...");
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/payment/admin/invoices`);
+        console.log("✅ Response received:", res.data);
+
+        const formatted = res.data.data.map((item: any) => ({
+          invoice: item.invoiceNo,
+          transactionId: item.transactionId,
+          tenant: item.tenantName,
+          property: item.propertyName,
+          date: item.paymentDate,
+          amount: parseInt(item.amount.replace(/[^0-9]/g, "")), // removes ₹ and comma
+          status: item.status.toLowerCase(), // converts to 'pending', 'paid', etc.
+        }));
+
+        setPayments(formatted);
+      } catch (err) {
+        console.error("❌ Error fetching payments:", err);
+      }
+    };
+
+    fetchPayments();
+  }, []);
+
 
   const filtered = payments.filter((p) => {
     const matchesStatus = statusFilter === "All" || p.status === statusFilter;
@@ -158,20 +176,39 @@ export default function Payments() {
         <tbody>
           {paginated.map((p, i) => (
             <tr key={i} className="border-b hover:bg-gray-50">
-              <td className="px-3 py-2 text-blue-600 hover:underline">
-                <Link to={`/admin/invoice/${p.invoice}`}>{p.invoice}</Link>
+              <td className="px-3 py-2 flex flex-col gap-1">
+                <Link to={`/admin/invoice/${p.invoice}`} className="text-blue-600 hover:underline">
+                  {p.invoice}
+                </Link>
+                
               </td>
-              <td className="px-3 py-2">{p.transactionId}</td>
+
+              <td className="px-3 py-2">
+                {p.transactionId.length >= 10
+                  ? `XXX${p.transactionId.slice(-7)}`
+                  : `XXX${p.transactionId.slice(-7).padStart(7, '*')}`}
+              </td>
+
               <td className="px-3 py-2">{p.tenant}</td>
               <td className="px-3 py-2">{p.property}</td>
-              <td className="px-3 py-2">{p.date}</td>
+              <td className="px-3 py-2">
+                {new Date(p.date).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </td>
+
               <td className="px-3 py-2">{p.amount}</td>
-              <td
-                className={`px-3 py-2 ${
-                  p.status === "Paid" ? "text-green-600" : "text-yellow-600"
-                }`}
-              >
-                {p.status}
+              <td className="px-3 py-2">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${p.status === "paid"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-yellow-100 text-yellow-700"
+                    }`}
+                >
+                  {p.status}
+                </span>
               </td>
             </tr>
           ))}
@@ -182,7 +219,7 @@ export default function Payments() {
       <div className="mt-4 flex flex-col sm:flex-row justify-between text-sm font-semibold">
         <div>
           Total (this page): ₹
-          {paginated.reduce((sum, p) => sum + parseInt(p.amount.replace(/[^0-9]/g, "")), 0).toLocaleString()}
+          {paginated.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
         </div>
         <div>
           Total (this month): ₹
@@ -190,7 +227,7 @@ export default function Payments() {
             const date = new Date(p.date);
             const now = new Date();
             const sameMonth = date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-            return sameMonth ? sum + parseInt(p.amount.replace(/[^0-9]/g, "")) : sum;
+            return sameMonth ? sum + p.amount : sum;
           }, 0).toLocaleString()}
         </div>
       </div>

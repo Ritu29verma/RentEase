@@ -6,6 +6,8 @@ import {
 } from "react-router-dom";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import StripeSuccess from "./pages/StripeSuccess";
+import StripeCancel from "./pages/StripeCancel";
 
 // Layouts
 import TenantLayout from "./pages/TenantLayout";
@@ -36,6 +38,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<UnifiedLogin />} />
+        <Route path="/payment/success" element={<StripeSuccess />} />
+        <Route path="/payment/cancel" element={<StripeCancel />} />
+
 
         {/* ✅ Tenant Panel */}
         <Route element={<ProtectedRoute allowedRole="tenant" />}>
@@ -61,7 +66,7 @@ export default function App() {
           <Route path="payments" element={<Payments />} />
           <Route path="settings" element={<Settings />} />
           <Route path="tenant-profile/:name" element={<TenantProfile />} />
-          <Route path="invoice/:id" element={<InvoiceDetails />} />
+          <Route path="invoice/:invoiceId" element={<InvoiceDetails />} />
         </Route>
         </Route>
       </Routes>

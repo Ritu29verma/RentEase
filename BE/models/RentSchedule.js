@@ -11,6 +11,10 @@ const RentSchedule = sequelize.define('RentSchedule', {
     allowNull: false,
     defaultValue: 'Pending',
   },
+  reminderSent: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  }
 }, {
   tableName: 'rent_schedules',
 });
