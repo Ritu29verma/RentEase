@@ -10,16 +10,20 @@ export default function TenantSelfProfile() {
     mobile: "",
   });
 
-  // Replace with real tenant ID or from token/session
-  const tenantId = 1;
-
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/tenants/${tenantId}`);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/tenants/my-details`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         const { name, email, mobile } = res.data;
         setForm({ name, email, mobile });
       } catch (err: any) {
+        console.error(err);
         toast.error("Failed to fetch profile");
       }
     };
@@ -33,16 +37,16 @@ export default function TenantSelfProfile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.mobile.length > 10) {
-      toast.error("Mobile number cannot exceed 10 digits");
-      return;
-    }
-    try {
-      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/tenants/${tenantId}`, form);
-      toast.success("Profile updated successfully!");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update profile");
-    }
+    // if (form.mobile.length > 10) {
+    //   toast.error("Mobile number cannot exceed 10 digits");
+    //   return;
+    // }
+    // try {
+    //   await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/tenants/${tenantId}`, form);
+    //   toast.success("Profile updated successfully!");
+    // } catch (err: any) {
+    //   toast.error(err.response?.data?.message || "Failed to update profile");
+    // }
   };
 
   return (

@@ -6,6 +6,19 @@ const {Property} = require("../models/index");
 const moment = require('moment');
 const {RentSchedule, Invoice} =require("../models/index")
 
+const getMyDetails = async (req, res) => {
+  try {
+    const tenant = await Tenant.findByPk(req.tenantId);
+    if (!tenant) {
+      return res.status(404).json({ message: "Tenant not found" });
+    }
+    res.status(200).json(tenant);
+  } catch (error) {
+    console.error("Error fetching tenant:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 const getTenantById = async (req, res) => {
     try {
@@ -188,6 +201,7 @@ const getTenantById = async (req, res) => {
   };
 
   module.exports = {
+    getMyDetails,
     getTenantById,
     verifyTokenAndSetPassword,
     login,
