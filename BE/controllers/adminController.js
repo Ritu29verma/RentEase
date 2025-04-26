@@ -8,7 +8,8 @@ const {RentSchedule} =require("../models/index")
 const {GeneralSetting} = require("../models/GeneralSetting")
 const {ReminderSetting} = require("../models/ReminderSetting")
 const {BillingSetting} = require("../models/BillingSetting")
-
+const { scheduleReminders } = require("../scheduler");
+const sendDailyReminders = require('../sendDailyReminders')
 const addTenant = async (req, res) => {
   try {
     const { name, email, mobile, propertyId } = req.body;
@@ -121,13 +122,20 @@ const updateTenant = async (req, res) => {
   
   const saveGeneralSettings = async (req, res) => {
     try {
-      const [setting] = await GeneralSetting.upsert(req.body);
+      let setting = await GeneralSetting.findOne();
+  
+      if (setting) {
+        await setting.update(req.body);
+      } else {  
+        setting = await GeneralSetting.create(req.body);
+      }
       res.json(setting);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   };
   
+
   const getGeneralSettings = async (req, res) => {
     try {
       const setting = await GeneralSetting.findOne();
@@ -137,10 +145,17 @@ const updateTenant = async (req, res) => {
     }
   };
   
-  
+
   const saveReminderSettings = async (req, res) => {
     try {
-      const [setting] = await ReminderSetting.upsert(req.body);
+      const payload = { id: 1, ...req.body };
+      const [setting] = await ReminderSetting.upsert(payload);
+  
+      // Reschedule task immediately
+      if (payload.timeToSend) {
+        scheduleReminders(payload.timeToSend, sendDailyReminders);
+      }
+  
       res.json(setting);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -149,12 +164,13 @@ const updateTenant = async (req, res) => {
   
   const getReminderSettings = async (req, res) => {
     try {
-      const setting = await ReminderSetting.findOne();
+      const setting = await ReminderSetting.findByPk(1); 
       res.json(setting);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   };
+  
   
   
   const saveBillingSettings = async (req, res) => {

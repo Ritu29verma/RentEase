@@ -9,6 +9,8 @@ const propertyRouts = require("./routes/propertyRoutes");
 const adminroutes =require("./routes/adminroutes");
 const rentScheduleRoutes = require("./routes/rentScheduleRoutes")
 const paymentRoutes =require("./routes/paymentRoutes");
+const {ReminderSetting} = require("./models/ReminderSetting")
+const { scheduleReminders } = require("./scheduler");
 const cron = require("node-cron");
 
 dotenv.config();
@@ -22,19 +24,29 @@ app.use('/api', adminroutes);
 app.use('/api', rentScheduleRoutes);
 app.use('/api/payment', paymentRoutes);
 
+const convertToCronTime = (timeString) => {
+  const [hours, minutes] = timeString.split(":");
+  return `${parseInt(minutes, 10)} ${parseInt(hours, 10)} * * *`;
+};
+
 const PORT = process.env.PORT || 5000;
 
 (async () => {
   await connectDB();
+
+  let reminderSetting = await ReminderSetting.findOne();
+  if (!reminderSetting) {
+    reminderSetting = await ReminderSetting.create();
+  }
+  const cronTime = convertToCronTime(reminderSetting.timeToSend);
+
   await runRentScheduler();
   await sendDailyReminders();
 
-  const rentSchedulerCron = process.env.RENT_SCHEDULER_CRON;
-  cron.schedule(rentSchedulerCron, runRentScheduler);
+  cron.schedule(cronTime, runRentScheduler);
 
 
-  const dailyReminderCron = process.env.DAILY_REMINDER_CRON;
-  cron.schedule(dailyReminderCron, sendDailyReminders);
+  scheduleReminders(reminderSetting.timeToSend, sendDailyReminders);
 
   app.listen(PORT, () => {
     console.log(`🚀 Server running on ${PORT}`);
