@@ -24,6 +24,12 @@ type Payment = {
   date: string;
 };
 
+type UpcomingPayment = {
+  tenantName: string;
+  amount: number;
+  dueDate: string;
+};
+
 export default function Dashboard() {
   const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
@@ -31,6 +37,7 @@ export default function Dashboard() {
   const [totalOverallCollected, setTotalOverallCollected] = useState<number>(0);
   const [totalTenants, setTotalTenants] = useState<number>(0);
   const [totalProperties, setTotalProperties] = useState(0);
+  const [upcomingPayments, setUpcomingPayments] = useState<UpcomingPayment[]>([]);
 
   useEffect(() => {
     axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/property/total`)
@@ -76,6 +83,12 @@ export default function Dashboard() {
         setRecentPayments(res.data);
       })
       .catch(err => console.error("Failed to load recent payments:", err));
+
+    axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/upcoming`)
+      .then(res => {
+        setUpcomingPayments(res.data);
+      })
+      .catch(err => console.error("Failed to load upcoming payments:", err));
   }, []);
   
 
@@ -117,50 +130,61 @@ export default function Dashboard() {
         {/* Recent Payments */}
         <div className="bg-white shadow rounded p-4">
           <h3 className="text-lg font-semibold mb-4">Recent Payments</h3>
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="px-4 py-2">Tenant</th>
-                <th className="px-4 py-2">Amount</th>
-                <th className="px-4 py-2">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentPayments.map((payment, index) => (
-                <tr className="border-b" key={index}>
-                  <td className="px-4 py-2">{payment.tenantName}</td>
-                  <td className="px-4 py-2">₹{payment.amount}</td>
-                  <td className="px-4 py-2">{payment.date}</td>
+          {recentPayments.length > 0 ? (
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-2">Tenant</th>
+                  <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentPayments.map((payment, index) => (
+                  <tr className="border-b" key={index}>
+                    <td className="px-4 py-2">{payment.tenantName}</td>
+                    <td className="px-4 py-2">₹{payment.amount}</td>
+                    <td className="px-4 py-2">{payment.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-gray-500 text-sm">No recent payments.</p>
+          )}
         </div>
 
         {/* Upcoming Payments */}
         <div className="bg-white shadow rounded p-4">
           <h3 className="text-lg font-semibold mb-4">Upcoming Payments</h3>
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="px-4 py-2">Tenant</th>
-                <th className="px-4 py-2">Amount</th>
-                <th className="px-4 py-2">Due Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b">
-                <td className="px-4 py-2">Jane Smith</td>
-                <td className="px-4 py-2">₹10,000</td>
-                <td className="px-4 py-2">Apr 15, 2025</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-2">Amit Shah</td>
-                <td className="px-4 py-2">₹9,500</td>
-                <td className="px-4 py-2">Apr 18, 2025</td>
-              </tr>
-            </tbody>
-          </table>
+          {upcomingPayments.length > 0 ? (
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-2">Tenant</th>
+                  <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">Due Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcomingPayments.map((payment, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="px-4 py-2">{payment.tenantName}</td>
+                    <td className="px-4 py-2">₹{payment.amount}</td>
+                    <td className="px-4 py-2">
+                      {new Date(payment.dueDate).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-gray-500 text-sm">No upcoming payments.</p>
+          )}
         </div>
       </div>
     </div>

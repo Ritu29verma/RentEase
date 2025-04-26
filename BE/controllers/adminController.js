@@ -191,6 +191,37 @@ const updateTenant = async (req, res) => {
     }
   };
 
+  const getUpcomingPayments = async (req, res) => {
+    try {
+      const upcomingPayments = await RentSchedule.findAll({
+        where: {
+          status: 'Pending'
+        },
+        include: [
+          {
+            model: Tenant,
+            attributes: ['name'] // only fetch tenant name
+          }
+        ],
+        order: [['dueDate', 'ASC']], // Nearest due date first
+        limit: 5,
+      });
+  
+      const formattedPayments = upcomingPayments.map(payment => ({
+        tenantName: payment.Tenant.name,
+        amount: payment.amount,
+        dueDate: payment.dueDate,
+      }));
+  
+      res.json(formattedPayments);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Server Error' });
+    }
+  };
+  
+
+
 
 module.exports = {
     addTenant,
@@ -202,5 +233,6 @@ module.exports = {
     getReminderSettings,
     saveReminderSettings,
     getGeneralSettings,
-    saveGeneralSettings
+    saveGeneralSettings,
+    getUpcomingPayments
 }
