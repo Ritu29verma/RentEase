@@ -134,7 +134,6 @@ const getTenantById = async (req, res) => {
     try {
       const tenantId = req.tenantId;
   
-      // 1. Get Tenant with associated Property
       const tenant = await Tenant.findByPk(tenantId, {
         include: {
           model: Property,
@@ -158,14 +157,16 @@ const getTenantById = async (req, res) => {
   
       if (lastSchedule) {
         const lastDate = new Date(lastSchedule.dueDate);
-  
-        if (frequency === 'Monthly') {
+      
+        if (frequency === 'Weekly') {
+          lastDate.setDate(lastDate.getDate() + 7);
+        } else if (frequency === 'Monthly') {
           lastDate.setMonth(lastDate.getMonth() + 1);
         } else if (frequency === 'Quarterly') {
           lastDate.setMonth(lastDate.getMonth() + 3);
         }
-  
-        nextDueDate = lastDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      
+        nextDueDate = lastDate.toISOString().split('T')[0];
       }
   
       // 3. Total Paid amount
@@ -190,6 +191,7 @@ const getTenantById = async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   };
+
   const getTotalTenants = async (req, res) => {
     try {
       const totalTenants = await Tenant.count();

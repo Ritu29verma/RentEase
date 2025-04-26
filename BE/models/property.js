@@ -12,7 +12,7 @@ const Property = sequelize.define('Property', {
     allowNull: false,
   },
   frequency: {
-    type: DataTypes.ENUM('Monthly', 'Quarterly'),
+    type: DataTypes.ENUM('Weekly', 'Monthly', 'Quarterly'),
     allowNull: false,
     defaultValue: 'Monthly',
   },

@@ -2,10 +2,10 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../configs/db');
 
 const BillingSetting = sequelize.define('BillingSetting', {
-  defaultRentFrequency: {
-    type: DataTypes.ENUM('Monthly', 'Quarterly'),
-    defaultValue: 'Monthly',
-  },
+    defaultRentFrequency: {
+        type: DataTypes.ENUM('Weekly', 'Monthly', 'Quarterly'),
+        defaultValue: 'Monthly',
+      },
   invoicePrefix: {
     type: DataTypes.STRING,
     defaultValue: 'INV-',

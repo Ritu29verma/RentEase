@@ -38,7 +38,15 @@ const runRentScheduler = async () => {
       if (!lastSchedule) continue;
   
 
-      const nextDueDate = moment(lastSchedule.dueDate).add(frequency === 'Monthly' ? 1 : 3, 'months');
+      const nextDueDate = moment(lastSchedule.dueDate);
+
+        if (frequency === 'Weekly') {
+        nextDueDate.add(7, 'days');
+        } else if (frequency === 'Monthly') {
+        nextDueDate.add(1, 'months');
+        } else if (frequency === 'Quarterly') {
+        nextDueDate.add(3, 'months');
+        }
       const creationThresholdDate = moment(nextDueDate).subtract(daysBeforeDue, 'days');
       const today = moment();
   

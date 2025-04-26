@@ -1,4 +1,4 @@
-const {Tenant} = require("../models/index");
+const {Tenant,TenantStay} = require("../models/index");
 const Admin = require("../models/Admin")
 const jwt = require('jsonwebtoken');
 const sendEmail = require("../configs/email");
@@ -10,6 +10,7 @@ const {ReminderSetting} = require("../models/ReminderSetting")
 const {BillingSetting} = require("../models/BillingSetting")
 const { scheduleReminders } = require("../scheduler");
 const sendDailyReminders = require('../sendDailyReminders')
+
 const addTenant = async (req, res) => {
   try {
     const { name, email, mobile, propertyId } = req.body;
@@ -55,6 +56,12 @@ const addTenant = async (req, res) => {
       });
       console.log(`✅ Initial rent schedule created for ${name} (${dueDate.format('MMMM YYYY')})`);
     }
+    await TenantStay.create({
+        tenantId: newTenant.id,
+        propertyId: propertyId,
+        fromDate: new Date(),
+        toDate: null, 
+      });
 
   } catch (error) {
     console.error("Error adding tenant:", error);
@@ -86,13 +93,36 @@ const updateTenant = async (req, res) => {
 
       if (!tenant) {
         return res.status(404).json({ message: "Tenant not found" });
-      }
+      } if (propertyId && tenant.propertyId !== propertyId) {
+        // End the previous stay
+        const currentStay = await TenantStay.findOne({
+          where: {
+            tenantId: tenant.id,
+            toDate: null,
+          },
+        });
+  
+        if (currentStay) {
+          currentStay.toDate = new Date();
+          await currentStay.save();
+          
+        }
+  
+        // Create a new stay entry
+        await TenantStay.create({
+          tenantId: tenant.id,
+          propertyId: propertyId,
+          fromDate: new Date(),
+          toDate: null,
+        });
 
+      }
+  
       await tenant.update({
         name,
         email,
         mobile,
-        propertyId
+        propertyId,
       });
 
       res.json({ message: "Tenant updated successfully", tenant });
@@ -101,8 +131,6 @@ const updateTenant = async (req, res) => {
       res.status(500).json({ message: "Server error" });
     }
 };
-
-
 
   
   const deleteTenant = async (req, res) => {

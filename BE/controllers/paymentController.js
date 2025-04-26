@@ -55,7 +55,15 @@ const initStripe = async (req, res) => {
   
       // Calculate fromDate and toDate based on frequency
       const fromDate = new Date(rentSchedule.dueDate);
-      const toDate = subDays(addMonths(fromDate, tenant.Property.frequency === 'Monthly' ? 1 : 3), 1);
+      let toDate;
+
+        if (tenant.Property.frequency === 'Weekly') {
+        toDate = subDays(addDays(fromDate, 7), 1); // 7 days range
+        } else if (tenant.Property.frequency === 'Monthly') {
+        toDate = subDays(addMonths(fromDate, 1), 1);
+        } else if (tenant.Property.frequency === 'Quarterly') {
+        toDate = subDays(addMonths(fromDate, 3), 1);
+        }
   
       // Check if an invoice already exists
       let invoice = await Invoice.findOne({ where: { tenantId, rentScheduleId } });
@@ -213,7 +221,7 @@ const initStripe = async (req, res) => {
         property: {
           name: invoice.Tenant?.Property?.name || "N/A",
           rent: invoice.Tenant?.Property?.rent || 0,
-          frequency: invoice.Tenant?.Property?.frequency || "Monthly",
+          frequency: invoice.Tenant?.Property?.frequency,
         },
         duration: {
           from: invoice.fromDate,
